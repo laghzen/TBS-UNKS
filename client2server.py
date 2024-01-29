@@ -1,19 +1,20 @@
+import threading
+import time
 import traceback
 import sys
-import random
 import math
 
 
-class Radar():
-    def __init__(self, stand):
-        from main import FPS
+class Radar(threading.Thread):
+    def __init__(self, stand, FPS):
+        super().__init__()
         self.FPS = FPS
 
-        self.size_x = 211//2
-        self.size_y = 203//2
+        self.size_x = 211 // 2
+        self.size_y = 203 // 2
 
-        self.x = 50//2 + self.size_x//2
-        self.y = 620//2 + self.size_y//2
+        self.x = 50 // 2 + self.size_x // 2
+        self.y = 620 // 2 + self.size_y // 2
 
         self.a = 0
         self.speed = 0
@@ -24,44 +25,48 @@ class Radar():
         self.working_mode = 2
         self.rotation_mode = 0
 
-        self.freez_radar = [0 for _ in range(0, 5)]
+        self.time_prev = 0
 
-    def updata(self):
-        for i in range(len(self.freez_radar)-1, 0, -1):
-            self.freez_radar[i] = self.freez_radar[i-1]
-        self.freez_radar[0] = self.speed
+    def run(self):
+        while True:
+            time_now = self.get_time()
+            self.a += self.speed * self.k * (time_now - self.time_prev) / self.FPS
+            self.a = max(-self.max_a, min(self.max_a, self.a))
+            self.time_prev = time_now
 
-        self.a += self.freez_radar[-1]*self.k/self.FPS
-        self.a = max(-self.max_a, min(self.max_a, self.a))
-
-        if self.speed == 0:
-            self.working_mode = 3
-            if self.speed > 0:
-                self.rotation_mode = 1
+            if self.speed == 0:
+                self.working_mode = 3
+                if self.speed > 0:
+                    self.rotation_mode = 1
+                else:
+                    self.rotation_mode = 2
             else:
-                self.rotation_mode = 2
-        else:
-            self.working_mode = 2
-            self.rotation_mode = 0
+                self.working_mode = 2
+                self.rotation_mode = 0
 
-        if self.a == self.max_a:
-            self.rotation_mode = 3
-        if self.a == -self.max_a:
-            self.rotation_mode = 4
+            if self.a == self.max_a:
+                self.rotation_mode = 3
+            if self.a == -self.max_a:
+                self.rotation_mode = 4
+
+            time.sleep(0.001)
 
     def set_speed(self, value):
         self.speed = value
 
+    def set_timer(self, get_time):
+        self.get_time = get_time
 
-class Sputnik():
-    def __init__(self, stand):
-        from main import FPS
+
+class Sputnik(threading.Thread):
+    def __init__(self, stand, FPS):
+        super().__init__()
         self.FPS = FPS
 
         self.radar = stand.radar
 
-        self.size_x = 124//2
-        self.size_y = 147//2
+        self.size_x = 124 // 2
+        self.size_y = 147 // 2
 
         self.x = stand.WIDTH - self.size_x + 3
         self.startY = stand.HEIGHT // 2 - self.size_y
@@ -69,56 +74,38 @@ class Sputnik():
 
         self.max_way = 228
         self.max_loss = self.size_y * 0.5
-        self.centre = self.y + self.size_y*0.75
+        self.centre = self.y + self.size_y * 0.75
 
         self.dy = 0
         self.k = 1
         self.time = 0
-        self.status = '0'*128
+        self.status = '0' * 128
         self.freez_status = [True] + [False for _ in range(0, 5)]
         self.itr_status = 1
 
-        self.first_step = True
-        self.mode = 0
-        self.modes = {
-            0: [(0, 0, False), 0],
-            1: [(self.FPS*0.25, 30/FPS*2, False), 0],
-            2: [(self.FPS*0.5, 20/FPS*2, True), 0],
-            3: [(self.FPS*1, 35/FPS*2, True), 0],
-            4: [(self.FPS*2, 25/FPS*2, False), 0],
-            5: [(self.FPS*4, 20/FPS*2, True), 0]
-        }
+        self.move = lambda time: math.sin(time)
+        self.max_move = 0
+        for i in range(0, 10000000):
+            if self.move(i/1000) > self.max_move:
+                self.max_move = i/1000
 
-    def updata(self, time):
-        if self.mode == 0:
-            self.mode = random.randint(1, 5)
+    def run(self):
+        while True:
+            self.y = self.startY + self.move(self.get_time()) * self.max_way
+            self.y = min(self.startY + self.max_way, max(self.startY - self.max_way, self.y))
 
-            self.modes[self.mode][-1] = self.modes[self.mode][0][0]
-            self.dy = self.modes[self.mode][0][1]
-            if self.modes[self.mode][0][-1]:
-                self.k -= self.k * 2
+            self.centre = self.y + self.size_y * 0.75
+            self.time = round(self.get_time())
 
-        if self.modes[self.mode][-1] == 0 or (self.y == self.startY+self.max_way or self.y == self.startY-self.max_way) and (not self.first_step):
-            self.mode = 0
-            self.first_step = True
-            self.dy = 0
-        else:
-            self.first_step = False
-            self.modes[self.mode][-1] -= 1
+            self.itr_status -= 1
+            if self.freez_status[self.itr_status]:
+                self.itr_status = len(self.freez_status) - 1
+                self.status = self.get_info()
 
-        self.y += self.dy * self.k
-        self.y = min(self.startY+self.max_way, max(self.startY-self.max_way, self.y))
-
-        self.centre = self.y + self.size_y * 0.75
-        self.time = round(time*1000)
-
-        self.itr_status -= 1
-        if self.freez_status[self.itr_status]:
-            self.itr_status = len(self.freez_status)-1
-            self.status = self.get_info()
+            time.sleep(0.001)
 
     def get_info(self):
-        dx_input = self.startY + self.size_y*0.75 - 512 * math.tan(math.radians(self.radar.a)) - self.centre
+        dx_input = self.startY + self.size_y * 0.75 - 512 * math.tan(math.radians(self.radar.a)) - self.centre
         dx_convert = (((dx_input + 456) * (2048 + 2048)) / (456 + 456)) - 2048
         dx = dx_convert if dx_convert >= 0 else 4096 + dx_convert
         info_dict = {
@@ -135,18 +122,43 @@ class Sputnik():
 
         return int(info[::-1].zfill(128), 2)
 
+    def set_timer(self, get_time):
+        self.get_time = get_time
+
+    def get_xy(self):
+        return self.x, self.y
+
+
+class Tracker(threading.Thread):
+    def __init__(self, radar, sputnik):
+        super().__init__()
+        from tracker import tracker
+        self.tracker = tracker(radar, sputnik)
+
+        self.tracklog = open('tracklog.log', 'wb')
+
+    def run(self):
+        while True:
+            self.tracker.run(self.tracklog)
+
 
 class TBS_Stand_Server():
     def __init__(self):
         self.WIDTH, self.HEIGHT = 0, 0
 
     def update_classes(self):
-        self.radar = Radar(self)
-        self.sputnik = Sputnik(self)
+        self.radar = Radar(self, self.FPS)
+        self.sputnik = Sputnik(self, self.FPS)
 
     def set_size(self, WIDTH, HEIGHT):
         self.WIDTH, self.HEIGHT = WIDTH, HEIGHT
+
+    def set_FPS(self, FPS):
+        self.FPS = FPS
+
+    def get_obj(self):
         self.update_classes()
+        return self.radar, self.sputnik
 
 
 def server() -> TBS_Stand_Server:
@@ -154,12 +166,9 @@ def server() -> TBS_Stand_Server:
 
 
 class TBS_Stand_Client():
-    def __init__(self):
-        from main import c2s
-
-        self.server = c2s
-        self.radar = c2s.radar
-        self.sputnik = c2s.sputnik
+    def __init__(self, radar, sputnik):
+        self.radar = radar
+        self.sputnik = sputnik
 
     def moveStop(self):
         self.radar.set_speed(0)
@@ -195,7 +204,6 @@ class TBS_Stand_Client():
         status = self.sputnik.status
         return status
 
-
     @staticmethod
     def __warn_tb(error, warning=False, cut=2):
         level = "Предупреждение" if warning else "Ошибка"
@@ -203,8 +211,8 @@ class TBS_Stand_Client():
               f"{level}: {error}", file=sys.stderr, flush=True)
 
 
-def client2server() -> TBS_Stand_Client:
-    return TBS_Stand_Client()
+def client2server(radar, sputnik) -> TBS_Stand_Client:
+    return TBS_Stand_Client(radar, sputnik)
 
 
 if __name__ == '__main__':
