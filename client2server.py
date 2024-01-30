@@ -137,13 +137,39 @@ class Tracker(threading.Thread):
         radar_global = radar
         sputnik_global = sputnik
 
-        from tracker import tracker
+        from input_files.tracker import tracker
         self.tracker = tracker()
 
         self.tracklog = open('tracklog.log', 'wb')
 
     def run(self):
         self.tracker.run(self.tracklog)
+
+class Encoder(threading.Thread):
+    def __init__(self):
+        super().__init__()
+
+        from input_files.encoder import encoder
+        self.encoder = encoder
+
+        self.filein = open('input_files/input.txt', 'rb')
+        self.fileout = open('input_files/send_data.txt', 'wb')
+
+    def run(self):
+        self.encoder(self.filein, self.fileout)
+
+class Decoder(threading.Thread):
+    def __init__(self):
+        super().__init__()
+
+        from input_files.decoder import decoder
+        self.decoder = decoder
+
+        self.filein = open('input_files/input.txt', 'rb')
+        self.fileout = open('input_files/send_data.txt', 'wb')
+
+    def run(self):
+        self.decoder(self.filein, self.fileout)
 
 
 class TBS_Stand_Server():

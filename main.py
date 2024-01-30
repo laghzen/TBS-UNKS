@@ -1,5 +1,7 @@
 # здесь подключаются модули
-from client2server import server, Tracker
+import time
+
+from client2server import server, Tracker, Encoder, Decoder
 from show import Screen
 
 from time_class import Timer
@@ -18,6 +20,8 @@ sputnik.set_timer(timer.get_time)
 screen.set_obj(radar, sputnik)
 
 tracker = Tracker(radar, sputnik)
+encoder = Encoder()
+decoder = Decoder()
 
 
 def start_core():
@@ -27,7 +31,12 @@ def start_core():
     radar.start()
     sputnik.start()
 
-    tracker.start()
+    try:
+        tracker.start()
+        # encoder.start()
+
+    except Exception as e:
+        print(e)
 
 
 def stop_core():
@@ -38,8 +47,9 @@ def stop_core():
     sputnik.join()
 
     tracker.join()
+    # encoder.join()
 
 
 if __name__ == '__main__':
     start_core()
-    # stop_core()
+    stop_core()
