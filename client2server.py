@@ -83,15 +83,15 @@ class Sputnik(threading.Thread):
         self.freez_status = [True] + [False for _ in range(0, 5)]
         self.itr_status = 1
 
-        self.move = lambda time: math.sin(time)
-        self.max_move = 0
-        for i in range(0, 10000000):
-            if self.move(i/1000) > self.max_move:
-                self.max_move = i/1000
+        self.move = lambda time: 2*math.sin(time) + math.sin(time*4.3+1)
+        self.max_move = 3
+        # for i in range(1000, 100000000):
+        #     if self.move(i/1000) > self.max_move:
+        #         self.max_move = i/1000
 
     def run(self):
         while True:
-            self.y = self.startY + self.move(self.get_time()) * self.max_way
+            self.y = self.startY + self.move(self.get_time()) * self.max_way / self.max_move
             self.y = min(self.startY + self.max_way, max(self.startY - self.max_way, self.y))
 
             self.centre = self.y + self.size_y * 0.75
@@ -138,8 +138,7 @@ class Tracker(threading.Thread):
         self.tracklog = open('tracklog.log', 'wb')
 
     def run(self):
-        while True:
-            self.tracker.run(self.tracklog)
+        self.tracker.run(self.tracklog)
 
 
 class TBS_Stand_Server():
