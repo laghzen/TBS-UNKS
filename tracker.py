@@ -13,9 +13,9 @@ class tracker:
         c2s = client2server(self.radar, self.sputnik)
         i = 0
 
-        P = 5
-        I = 3
-        D = 1
+        P = 0.3
+        I = 0.5
+        D = 0.1
         err = 0
         integral = 0
         prev_err = 0
@@ -49,4 +49,4 @@ class tracker:
             #             c2s.moveLeft(5)
             #         else:
             #             c2s.moveRight(5)
-            time.sleep(0.03)
+            time.sleep(0.0016)

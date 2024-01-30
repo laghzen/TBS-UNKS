@@ -30,7 +30,7 @@ class Radar(threading.Thread):
     def run(self):
         while True:
             time_now = self.get_time()
-            self.a += self.speed * self.k * (time_now - self.time_prev) / self.FPS
+            self.a += self.speed * self.k * (time_now - self.time_prev)
             self.a = max(-self.max_a, min(self.max_a, self.a))
             self.time_prev = time_now
 
