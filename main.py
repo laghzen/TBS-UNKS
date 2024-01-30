@@ -11,7 +11,6 @@ c2s = server()
 
 screen = Screen()
 c2s.set_size(*screen.get_size())
-c2s.set_FPS(screen.get_FPS())
 
 radar, sputnik = c2s.get_obj()
 radar.set_timer(timer.get_time)
@@ -27,6 +26,7 @@ def start_core():
     screen.start()
     radar.start()
     sputnik.start()
+
     tracker.start()
 
 
@@ -36,6 +36,7 @@ def stop_core():
     screen.join()
     radar.join()
     sputnik.join()
+
     tracker.join()
 
 

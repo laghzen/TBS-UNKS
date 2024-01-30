@@ -6,9 +6,8 @@ import math
 
 
 class Radar(threading.Thread):
-    def __init__(self, stand, FPS):
+    def __init__(self, stand):
         super().__init__()
-        self.FPS = FPS
 
         self.size_x = 211 // 2
         self.size_y = 203 // 2
@@ -59,9 +58,8 @@ class Radar(threading.Thread):
 
 
 class Sputnik(threading.Thread):
-    def __init__(self, stand, FPS):
+    def __init__(self, stand):
         super().__init__()
-        self.FPS = FPS
 
         self.radar = stand.radar
 
@@ -129,11 +127,18 @@ class Sputnik(threading.Thread):
         return self.x, self.y
 
 
+radar_global, sputnik_global = None, None
 class Tracker(threading.Thread):
     def __init__(self, radar, sputnik):
         super().__init__()
+
+        global radar_global
+        global sputnik_global
+        radar_global = radar
+        sputnik_global = sputnik
+
         from tracker import tracker
-        self.tracker = tracker(radar, sputnik)
+        self.tracker = tracker()
 
         self.tracklog = open('tracklog.log', 'wb')
 
@@ -146,14 +151,11 @@ class TBS_Stand_Server():
         self.WIDTH, self.HEIGHT = 0, 0
 
     def update_classes(self):
-        self.radar = Radar(self, self.FPS)
-        self.sputnik = Sputnik(self, self.FPS)
+        self.radar = Radar(self)
+        self.sputnik = Sputnik(self)
 
     def set_size(self, WIDTH, HEIGHT):
         self.WIDTH, self.HEIGHT = WIDTH, HEIGHT
-
-    def set_FPS(self, FPS):
-        self.FPS = FPS
 
     def get_obj(self):
         self.update_classes()
@@ -165,9 +167,11 @@ def server() -> TBS_Stand_Server:
 
 
 class TBS_Stand_Client():
-    def __init__(self, radar, sputnik):
-        self.radar = radar
-        self.sputnik = sputnik
+    def __init__(self):
+        global radar_global
+        global sputnik_global
+        self.radar = radar_global
+        self.sputnik = sputnik_global
 
     def moveStop(self):
         self.radar.set_speed(0)
@@ -210,8 +214,8 @@ class TBS_Stand_Client():
               f"{level}: {error}", file=sys.stderr, flush=True)
 
 
-def client2server(radar, sputnik) -> TBS_Stand_Client:
-    return TBS_Stand_Client(radar, sputnik)
+def client2server() -> TBS_Stand_Client:
+    return TBS_Stand_Client()
 
 
 if __name__ == '__main__':

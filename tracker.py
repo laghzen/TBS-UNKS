@@ -5,12 +5,8 @@ from math import ceil
 
 
 class tracker:
-    def __init__(self, radar, sputnik):
-        self.radar = radar
-        self.sputnik = sputnik
-
     def run(self, tracklog):
-        c2s = client2server(self.radar, self.sputnik)
+        c2s = client2server()
         i = 0
 
         P = 0.3
@@ -33,7 +29,7 @@ class tracker:
 
             integral += err
             prev_err = err
-            print(rez)
+            # print(rez)
 
             if rez > 0:
                 c2s.moveLeft(abs(rez))
