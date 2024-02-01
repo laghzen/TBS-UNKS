@@ -71,6 +71,7 @@ class Sputnik(threading.Thread):
         self.y = self.startY
 
         self.max_way = 228
+        self.max_vision = 278
         self.max_loss = self.size_y * 0.5
         self.centre = self.y + self.size_y * 0.75
 
@@ -104,8 +105,12 @@ class Sputnik(threading.Thread):
 
     def get_info(self):
         dx_input = self.startY + self.size_y * 0.75 - 512 * math.tan(math.radians(self.radar.a)) - self.centre
-        dx_convert = (((dx_input + 456) * (2048 + 2048)) / (456 + 456)) - 2048
-        dx = dx_convert if dx_convert >= 0 else 4096 + dx_convert
+        if dx_input > self.max_vision:
+            dx = 3423  # !!!
+        else:
+            dx_convert = (((dx_input + 456) * (2048 + 2048)) / (456 + 456)) - 2048
+            dx = dx_convert if dx_convert >= 0 else 4096 + dx_convert
+
         info_dict = {
             '0-11': bin(round(dx))[2:].zfill(12),
             '12-15': bin(self.radar.working_mode)[2:].zfill(4),
@@ -144,32 +149,6 @@ class Tracker(threading.Thread):
 
     def run(self):
         self.tracker.run(self.tracklog)
-
-class Encoder(threading.Thread):
-    def __init__(self):
-        super().__init__()
-
-        from input_files.encoder import encoder
-        self.encoder = encoder
-
-        self.filein = open('input_files/input.txt', 'rb')
-        self.fileout = open('input_files/send_data.txt', 'wb')
-
-    def run(self):
-        self.encoder(self.filein, self.fileout)
-
-class Decoder(threading.Thread):
-    def __init__(self):
-        super().__init__()
-
-        from input_files.decoder import decoder
-        self.decoder = decoder
-
-        self.filein = open('input_files/input.txt', 'rb')
-        self.fileout = open('input_files/send_data.txt', 'wb')
-
-    def run(self):
-        self.decoder(self.filein, self.fileout)
 
 
 class TBS_Stand_Server():
