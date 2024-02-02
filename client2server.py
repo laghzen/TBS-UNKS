@@ -26,8 +26,13 @@ class Radar(threading.Thread):
 
         self.time_prev = 0
 
+        self.stop_flag = False
+
+    def stop(self):
+        self.stop_flag = True
+
     def run(self):
-        while True:
+        while not self.stop_flag:
             time_now = self.get_time()
             self.a += self.speed * self.k * (time_now - self.time_prev)
             self.a = max(-self.max_a, min(self.max_a, self.a))
@@ -88,8 +93,13 @@ class Sputnik(threading.Thread):
         #     if self.move(i/1000) > self.max_move:
         #         self.max_move = i/1000
 
+        self.stop_flag = False
+
+    def stop(self):
+        self.stop_flag = True
+
     def run(self):
-        while True:
+        while not self.stop_flag:
             self.y = self.startY + self.move(self.get_time()) * self.max_way / self.max_move
             self.y = min(self.startY + self.max_way, max(self.startY - self.max_way, self.y))
 

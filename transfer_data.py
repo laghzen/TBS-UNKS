@@ -57,7 +57,7 @@ def noiseGenerate(dataAndP, MAX_COUNT_ERR=None, MIN_DISTANCE_ERR=None, MIN_LEN_E
                 if index1 != -1: permission_position_err.remove(index1)
                 if index2 != len(data): permission_position_err.remove(index2)
 
-    return data
+    return ''.join([str(i) for i in data])
 
 
 def getBits(fin):
@@ -65,18 +65,18 @@ def getBits(fin):
     data = fin.read()
     if data:
         for i in data:
-            byte = str(bin(ord(i)))[2:].zfill(8)
+            byte = str(bin(i))[2:].zfill(8)
             newData += byte
 
     return newData
 
 
 def fromBits(fout, data):
-    newData = ''
+    newData = b''
     if data:
         for i in range(len(data) // 8):
             byte = data[i * 8:i * 8 + 8]
-            char = chr(int(byte, 2))
+            char = bytes(int(byte, 2))
             newData += char
 
     fout.write(newData)
@@ -90,51 +90,55 @@ class TransferData(threading.Thread):
 
         self.stop_core = stop_core
 
-        self.fin = open('input_files/send_data.txt', 'r')
-        self.data_out = ''
-        self.transfer_data = []
-        self.fout = open('input_files/output.txt', 'w')
-
-        self.volume_input_data = 256000 * 8
-        if chank is None:
-            self.chank = self.volume_input_data
-        self.speed = (1750 * 1024 * 8) / (5 * 60)
-
-        MAX_COUNT_ERR = None
-        MIN_DISTANCE_ERR = None
-        MIN_LEN_ERR = None
-        MAX_LEN_ERR = None
-        permission_position_err = None
-
-    def prepare_data(self):
+        self.fin = open('input_files/send_data.txt', 'rb')
         self.data_in = getBits(self.fin)
         self.data_in = [int(i) for i in list(self.data_in)]
 
+        self.data_out = ''
+        self.transfer_data = []
+        self.fout = open('input_files/output.txt', 'wb')
+
+        self.volume_input_data = 256000 * 8
+        if chank is None:
+            self.chank = len(self.data_in)
+        else:
+            self.chank = chank
+        self.speed = (1750 * 1024 * 8) / (5 * 60)
+
+        self.MAX_COUNT_ERR = None
+        self.MIN_DISTANCE_ERR = None
+        self.MIN_LEN_ERR = None
+        self.MAX_LEN_ERR = None
+        self.permission_position_err = None
+
+        self.stop_flag = False
+
     def compile_transfer(self):
-        self.data_out = noiseGenerate(self.transfer_data, self.MAX_COUNT_ERR, self.MIN_DISTANCE_ERR, self.MIN_LEN_ERR, self.MAX_LEN_ERR, self.permission_position_err)
-        self.data_out = ''.join([str(i) for i in self.data_out])
+        print('Добавляем ШУМ!')
+        for i in self.transfer_data:
+            self.data_out += noiseGenerate(i, self.MAX_COUNT_ERR, self.MIN_DISTANCE_ERR, self.MIN_LEN_ERR, self.MAX_LEN_ERR, self.permission_position_err)
+        print('Конвертируем в байты...')
         fromBits(self.fout, self.data_out)
 
     def close_transfer(self):
+        print('Закончили обработку передачи!')
         self.fin.close()
         self.fout.close()
 
-        self.stop_core()
-        sys.exit()
-
     def stop_transfer(self):
-        pass
+        print('Врямя вышло!')
+        self.stop_flag = True
 
     def run(self):
         chank_speed = round(self.speed/1000)
         for i in range(len(self.data_in) // self.chank + [0, 1][len(self.data_in) % self.chank != 0]):
-            chank_data = self.data_in[i * self.chank : max((i + 1) * self.chank, len(self.data_in))]
+            chank_data = self.data_in[i * self.chank : min((i + 1) * self.chank, len(self.data_in))]
             if not chank_data: break
 
             self.transfer_data.append([])
 
-            for i in range(len(chank_data) // chank_speed + [0, 1][len(chank_data) % chank_speed != 0]):
-                d_data = self.data_in[i * chank_speed : max((i + 1) * chank_speed, len(chank_data))]
+            for j in range(len(chank_data) // chank_speed + [0, 1][len(chank_data) % chank_speed != 0]):
+                d_data = chank_data[j * chank_speed : min((j + 1) * chank_speed, len(chank_data))]
 
                 status = self.sputnik.get_info()
                 dx = int(status) & 0x0fff
@@ -149,8 +153,17 @@ class TransferData(threading.Thread):
                     if self.transfer_data[-1] and self.transfer_data[-1][-1][0] == P:
                         self.transfer_data[-1][-1] += d_data
                     else:
-                        self.transfer_data[-1].append([P, d_data])
+                        self.transfer_data[-1].append([P, *d_data])
+                elif self.chank < len(self.data_in):
+                    self.transfer_data.pop(-1)
+                    break
 
                 time.sleep(0.001)
+
+                print((chank_speed * j + chank_speed * i * (len(chank_data) // chank_speed)) / len(self.data_in) * 100)
+
+                if self.stop_flag: break
+            if self.stop_flag: break
+        print('Передача закончена!')
 
         self.stop_core()

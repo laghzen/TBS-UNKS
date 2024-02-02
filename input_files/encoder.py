@@ -51,7 +51,7 @@ def encoder(filein, fileout):
 
         packets.append(s)
 
-    for _ in range(10):
+    for _ in range(1):
         for i in packets:
             fileout.write(i)
 

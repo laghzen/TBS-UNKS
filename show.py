@@ -17,6 +17,8 @@ class Screen(threading.Thread):
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
         self.clock = pygame.time.Clock()
 
+        self.stop_flag = False
+
         self.standIMG = pygame.transform.scale(pygame.image.load('img\\stand.png').convert_alpha(), (self.WIDTH, self.HEIGHT))
 
     def set_obj(self, radar, sputnik):
@@ -32,13 +34,12 @@ class Screen(threading.Thread):
     def get_FPS(self):
         return self.FPS
 
-    def run(self):
-        while True:
-            self.screen.fill(0)
+    def stop(self):
+        self.stop_flag = True
 
-            for i in pygame.event.get():
-                if i.type == pygame.QUIT:
-                    sys.exit()
+    def run(self):
+        while not self.stop_flag:
+            self.screen.fill(0)
 
             self.screen.blit(self.standIMG, (0, 0))
             blitRotate(self.screen, self.radarIMG, (self.radar.x, self.radar.y), (self.radar.size_x // 2, self.radar.size_y // 2), self.radar.a)
