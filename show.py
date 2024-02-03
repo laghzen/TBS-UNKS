@@ -11,7 +11,7 @@ class Screen(threading.Thread):
     def __init__(self):
         super().__init__()
 
-        self.WIDTH, self.HEIGHT = 1304 // 2, 1477 // 2
+        self.WIDTH, self.HEIGHT = 903, 1021
         self.FPS = 60
 
         self.screen = pygame.display.set_mode((self.WIDTH, self.HEIGHT))
@@ -42,10 +42,10 @@ class Screen(threading.Thread):
             self.screen.fill(0)
 
             self.screen.blit(self.standIMG, (0, 0))
-            blitRotate(self.screen, self.radarIMG, (self.radar.x, self.radar.y), (self.radar.size_x // 2, self.radar.size_y // 2), self.radar.a)
-            rectRotated(self.screen, (255, 0, 0), (self.radar.x, self.radar.y), (self.radar.size_x // 2, self.radar.size_y // 2), self.radar.a)
+            blitRotate(self.screen, self.radarIMG, (self.radar.x, self.radar.y), (self.radar.size_x / 2 - 20, self.radar.size_y / 2), self.radar.a)
+            rectRotated(self.screen, (255, 0, 0), (self.radar.x, self.radar.y), (self.radar.size_x / 2 - 20, self.radar.size_y / 2), self.radar.a)
             self.screen.blit(self.sputnikIMG, (self.sputnik.x, self.sputnik.y))
-            pygame.draw.rect(self.screen, (255, 0, 0), (0, self.sputnik.centre, 593, 2))
+            pygame.draw.rect(self.screen, (255, 0, 0), (0, self.sputnik.centre, self.WIDTH, 2))
 
             pygame.display.update()
             self.clock.tick(self.FPS)

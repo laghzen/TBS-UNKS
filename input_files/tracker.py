@@ -45,4 +45,4 @@ class tracker:
             #             c2s.moveLeft(5)
             #         else:
             #             c2s.moveRight(5)
-            time.sleep(0.0016)
+            time.sleep(0.001)

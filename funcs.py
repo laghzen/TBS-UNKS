@@ -15,11 +15,11 @@ def blitRotate(surf, image, pos, originPos, angle):
     surf.blit(rotated_image, rotated_image_rect)
 
 def rectRotated(surf, color, pos, originPos, angle):
-    s = pygame.Surface((1304//2, 1477//2))
+    s = pygame.Surface((903, 1021))
     s = s.convert_alpha()
     s.fill((0, 0, 0, 0))
 
-    pygame.draw.rect(s, color, (0, originPos[1]-5, 1304, 2))
+    pygame.draw.rect(s, color, (0, originPos[1]-1, 903, 2))
 
     blitRotate(surf, s, (pos[0], pos[1]), (originPos[0], originPos[1]), angle)
 

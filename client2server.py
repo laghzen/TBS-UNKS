@@ -9,17 +9,17 @@ class Radar(threading.Thread):
     def __init__(self, stand):
         super().__init__()
 
-        self.size_x = 211 // 2
-        self.size_y = 203 // 2
+        self.size_x = 147
+        self.size_y = 123
 
-        self.x = 50 // 2 + self.size_x // 2
-        self.y = 620 // 2 + self.size_y // 2
+        self.x = 33 + self.size_x / 2
+        self.y = stand.HEIGHT / 2
 
         self.a = 0
         self.speed = 0
         self.k = 1.8
 
-        self.max_a = 24
+        self.max_a = 30
 
         self.working_mode = 2
         self.rotation_mode = 0
@@ -61,6 +61,9 @@ class Radar(threading.Thread):
     def set_timer(self, get_time):
         self.get_time = get_time
 
+    def get_a(self):
+        return self.a
+
 
 class Sputnik(threading.Thread):
     def __init__(self, stand):
@@ -68,24 +71,20 @@ class Sputnik(threading.Thread):
 
         self.radar = stand.radar
 
-        self.size_x = 124 // 2
-        self.size_y = 147 // 2
+        self.size_x = 36
+        self.size_y = 61
 
-        self.x = stand.WIDTH - self.size_x + 3
-        self.startY = stand.HEIGHT // 2 - self.size_y
+        self.x = stand.WIDTH - self.size_x / 2 - 70
+        self.startY = stand.HEIGHT / 2 - self.size_y / 2
         self.y = self.startY
 
-        self.max_way = 228
-        self.max_vision = 278
-        self.max_loss = self.size_y * 0.5
-        self.centre = self.y + self.size_y * 0.75
+        self.max_way = 415
+        self.max_vision = self.max_way * 55/90
+        self.centre = self.y + self.size_y / 2
 
         self.dy = 0
         self.k = 1
         self.time = 0
-        self.status = '0' * 128
-        self.freez_status = [True] + [False for _ in range(0, 5)]
-        self.itr_status = 1
 
         self.move = lambda time: 2*math.sin(time) + math.sin(time*4.3+1)
         self.max_move = 3
@@ -100,25 +99,20 @@ class Sputnik(threading.Thread):
 
     def run(self):
         while not self.stop_flag:
-            self.y = self.startY + self.move(self.get_time()) * self.max_way / self.max_move
+            self.y = self.startY - self.move(self.get_time()) * self.max_way / self.max_move
             self.y = min(self.startY + self.max_way, max(self.startY - self.max_way, self.y))
 
-            self.centre = self.y + self.size_y * 0.75
+            self.centre = self.y + self.size_y / 2
             self.time = round(self.get_time())
-
-            self.itr_status -= 1
-            if self.freez_status[self.itr_status]:
-                self.itr_status = len(self.freez_status) - 1
-                self.status = self.get_info()
 
             time.sleep(0.001)
 
     def get_info(self):
-        dx_input = self.startY + self.size_y * 0.75 - 512 * math.tan(math.radians(self.radar.a)) - self.centre
-        if dx_input > self.max_vision:
+        dx_input = math.cos(math.radians(self.radar.get_a())) * (self.startY + self.size_y / 2 - self.centre - 726 * math.tan(math.radians(self.radar.get_a())))
+        if abs(dx_input) > self.max_vision:
             dx = 3423  # !!!
         else:
-            dx_convert = (((dx_input + 456) * (2048 + 2048)) / (456 + 456)) - 2048
+            dx_convert = (((dx_input + self.max_vision) * (2048 + 2048)) / (self.max_vision + self.max_vision)) - 2048
             dx = dx_convert if dx_convert >= 0 else 4096 + dx_convert
 
         info_dict = {
@@ -134,6 +128,16 @@ class Sputnik(threading.Thread):
             info += data
 
         return int(info[::-1].zfill(128), 2)
+
+    def get_dx(self):
+        dx_input = math.cos(math.radians(self.radar.get_a())) * (
+                    self.startY + self.size_y / 2 - self.centre - 726 * math.tan(math.radians(self.radar.get_a())))
+        if abs(dx_input) > self.max_vision:
+            dx = 3423  # !!!
+        else:
+            dx_convert = (((dx_input + self.max_vision) * (2048 + 2048)) / (self.max_vision + self.max_vision)) - 2048
+            dx = dx_convert if dx_convert >= 0 else 4096 + dx_convert
+        return dx
 
     def set_timer(self, get_time):
         self.get_time = get_time
@@ -219,7 +223,7 @@ class TBS_Stand_Client():
         # return self.getStatus()
 
     def getStatus(self):
-        status = self.sputnik.status
+        status = self.sputnik.get_info()
         return status
 
     @staticmethod

@@ -140,8 +140,7 @@ class TransferData(threading.Thread):
             for j in range(len(chank_data) // chank_speed + [0, 1][len(chank_data) % chank_speed != 0]):
                 d_data = chank_data[j * chank_speed : min((j + 1) * chank_speed, len(chank_data))]
 
-                status = self.sputnik.get_info()
-                dx = int(status) & 0x0fff
+                dx = self.sputnik.get_dx()
                 if dx > 2048:
                     dx = dx - 4096
 
@@ -160,7 +159,7 @@ class TransferData(threading.Thread):
 
                 time.sleep(0.001)
 
-                print((chank_speed * j + chank_speed * i * (len(chank_data) // chank_speed)) / len(self.data_in) * 100)
+                # print((chank_speed * j + chank_speed * i * (len(chank_data) // chank_speed)) / len(self.data_in) * 100)
 
                 if self.stop_flag: break
             if self.stop_flag: break
