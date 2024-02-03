@@ -21,12 +21,15 @@ class Screen(threading.Thread):
 
         self.standIMG = pygame.transform.scale(pygame.image.load('img\\stand.png').convert_alpha(), (self.WIDTH, self.HEIGHT))
 
-    def set_obj(self, radar, sputnik):
-        self.radar, self.sputnik = radar, sputnik
+    def set_obj(self, radar, sputnik, barrier):
+        self.radar, self.sputnik, self.barrier = radar, sputnik, barrier
         self.radarIMG = pygame.transform.scale(pygame.image.load('img\\radar.png').convert_alpha(),
                                                (self.radar.size_x, self.radar.size_y))
         self.sputnikIMG = pygame.transform.scale(pygame.image.load('img\\sputnik.png').convert_alpha(),
                                                  (self.sputnik.size_x, self.sputnik.size_y))
+        self.barrierIMG = pygame.image.load('img\\barrier.png').convert_alpha()
+        self.barriers = []
+        self.mirrors = []
 
     def get_size(self):
         return self.WIDTH, self.HEIGHT
@@ -38,8 +41,33 @@ class Screen(threading.Thread):
         self.stop_flag = True
 
     def run(self):
+        barrier = None
+        mirror = None
         while not self.stop_flag:
             self.screen.fill(0)
+
+            for event in pygame.event.get():
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not barrier:
+                    barrier = self.barrier()
+                    barrier.set_y(pygame.mouse.get_pos()[1])
+                if event.type == pygame.MOUSEMOTION and barrier:
+                    barrier.set_size_y(abs(pygame.mouse.get_pos()[1] - barrier.get_y()))
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3 and barrier:
+                    self.barriers.append(barrier)
+
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 3 and not mirror:
+                    mirror = self.mirror()
+                    mirror.set_x(*pygame.mouse.get_pos())
+                if event.type == pygame.MOUSEMOTION and mirror:
+                    mirror.set_size_x(abs(pygame.mouse.get_pos()[0] - mirror.get_x()))
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and mirror:
+                    self.mirrors.append(mirror)
+
+                if event.type == pygame.MOUSEBUTTONUP:
+                    barrier = None
+                    mirror = None
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 2:
+                    self.stop()
 
             self.screen.blit(self.standIMG, (0, 0))
             blitRotate(self.screen, self.radarIMG, (self.radar.x, self.radar.y), (self.radar.size_x / 2 - 20, self.radar.size_y / 2), self.radar.a)
@@ -47,5 +75,13 @@ class Screen(threading.Thread):
             self.screen.blit(self.sputnikIMG, (self.sputnik.x, self.sputnik.y))
             pygame.draw.rect(self.screen, (255, 0, 0), (0, self.sputnik.centre, self.WIDTH, 2))
 
+            if barrier:
+                print('...')
+                self.screen.blit(pygame.transform.scale(self.barrierIMG, barrier.get_size()), (barrier.x, barrier.y))
+            for b in self.barriers:
+                self.screen.blit(self.barrierIMG, (b.x, b.y))
+
             pygame.display.update()
             self.clock.tick(self.FPS)
+
+        self.stop_flag = False
