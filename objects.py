@@ -19,4 +19,21 @@ class Barrier:
 
 
 class Mirror:
-    pass
+    def __init__(self):
+        self.size_x = 1
+        self.size_y = 14
+
+        self.x, self.y = 0, 0
+
+    def set_xy(self, x, y):
+        self.x = x
+        self.y = y
+
+    def set_size_x(self, value):
+        self.size_x = value
+
+    def get_x(self):
+        return self.x
+
+    def get_size(self):
+        return self.size_x, self.size_y

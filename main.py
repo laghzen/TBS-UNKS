@@ -3,7 +3,7 @@ import sys
 import time
 
 from client2server import server, Tracker
-from objects import Barrier
+from objects import Barrier, Mirror
 from show import Screen
 from transfer_data import TransferData
 
@@ -71,10 +71,12 @@ screen = Screen()
 c2s.set_size(*screen.get_size())
 
 barrier = Barrier
+mirror = Mirror
+
 radar, sputnik = c2s.get_obj()
 radar.set_timer(timer.get_time)
 sputnik.set_timer(timer.get_time)
-screen.set_obj(radar, sputnik, barrier)
+screen.set_obj(radar, sputnik, barrier, mirror)
 
 screen.run()
 
